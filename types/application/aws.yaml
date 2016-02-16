@@ -1,0 +1,141 @@
+node_types:
+
+  application.nodes.MongoDatabase:
+    derived_from: cloudify.nodes.DBMS
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/mongo/install-mongo.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ mongod_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/mongo/start-mongo.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ mongod_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/mongo/stop-mongo.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ mongod_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+
+  application.nodes.NodeJSServer:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/nodejs/install-nodejs.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+
+  application.nodes.ApplicationModule:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      application_url:
+        description: >
+          URL to an archive containing the application source.
+          The archive must contain one top level directory.
+        default: https://github.com/paypal/rest-api-sample-app-nodejs/archive/master.tar.gz
+      startup_script:
+        description: >
+          This script will be used to start the nodejs application.
+          The path is relative to the top level single directory inside
+          the archive
+        type: string
+        default: app.js
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/application/configure-application.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+        configure:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/application/install-application.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+        start:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/application/start-application.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+        stop:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/application/stop-application.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+
+relationships:
+
+  app_connected_to_mongo:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path: 
+              default: scripts/mongo/set-mongo-url.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ mongod_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+
+  app_contained_in_nodejs:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/nodejs/set-nodejs-root.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }

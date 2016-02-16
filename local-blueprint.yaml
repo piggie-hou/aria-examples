@@ -1,0 +1,39 @@
+tosca_definitions_version: cloudify_dsl_1_0
+
+imports:  
+  - http://www.getcloudify.org/spec/cloudify/3.2/types.yaml
+  - types/application/local.yaml
+
+node_templates:
+
+  application:
+    type: application.nodes.ApplicationModule
+    relationships:
+      - type: app_connected_to_mongo
+        target: mongod
+      - type: app_contained_in_nodejs
+        target: nodejs
+
+  nodejs:
+    type: application.nodes.NodeJSServer
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: host
+
+  mongod:
+    type: application.nodes.MongoDatabase
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: host
+
+  host:
+    type: cloudify.nodes.Compute
+    properties:
+      ip: localhost
+      install_agent: false
+
+outputs:
+  endpoint:
+    description: Web application endpoint
+    value:
+      ip_address: localhost

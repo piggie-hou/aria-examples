@@ -1,0 +1,131 @@
+
+node_types:
+
+  provider_configuration:
+    derived_from: cloudify.nodes.Root
+    properties:
+      openstack_config: {}
+      aws_config: {}
+      aws_access_key_id:
+        default: { get_property: [ SELF,  aws_config, aws_access_key_id ] }
+      aws_secret_access_key:
+        default: { get_property: [ SELF,  aws_config, aws_secret_access_key ] }
+      ec2_region_name:
+        default: { get_property: [ SELF,  aws_config, ec2_region_name ] }
+
+  aria.multicloud.Compute:
+    derived_from: cloudify.aws.nodes.Instance
+    properties:
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+      aws_config:
+        default: { get_property: [ SELF,  aws_properties, aws_config ] }
+      image_id:
+        default: { get_property: [ SELF,  aws_properties, image_id ] }
+      instance_type:
+        default: { get_property: [ SELF,  aws_properties, instance_type ] }
+
+  aria.multicloud.port:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        default: {}
+      resource_id:
+        default: {}
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+
+  aria.multicloud.subnet:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        default: {}
+      resource_id:
+        default: {}
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+
+  aria.multicloud.network:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        default: {}
+      resource_id:
+        default: {}
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+
+  aria.multicloud.router:
+    derived_from: cloudify.nodes.Root
+    properties:
+      use_external_resource:
+        default: {}
+      resource_id:
+        default: {}
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+
+  aria.multicloud.security_group:
+    derived_from: cloudify.aws.nodes.SecurityGroup
+    properties:
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+      aws_config:
+        default: { get_property: [ SELF,  aws_properties, aws_config ] }
+      description:
+        default: { get_property: [ SELF, aws_properties, description ] }
+      rules:
+        default: { get_property: [ SELF, aws_properties, rules ] }
+
+  aria.multicloud.keypair:
+    derived_from: cloudify.aws.nodes.KeyPair
+    properties:
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+      aws_config:
+        default: { get_property: [ SELF,  aws_properties, aws_config ] }
+
+  aria.multicloud.ip_address:
+    derived_from: cloudify.nodes.Root
+    # derived_from: cloudify.aws.nodes.ElasticIP
+    properties:
+      openstack_properties:
+        default: {}
+      aws_properties:
+        default: {}
+      aws_config:
+        default: { get_property: [ SELF,  aws_properties, aws_config ] }
+
+relationships:
+
+  aria.relationships.subnet_connected_to_router:
+    derived_from: cloudify.relationships.connected_to
+
+  aria.relationships.port_connected_to_security_group:
+    derived_from: cloudify.relationships.connected_to
+
+  aria.relationships.instance_connected_to_security_group:
+    derived_from: cloudify.aws.relationships.instance_connected_to_security_group
+
+  aria.relationships.instance_connected_to_port:
+    derived_from: cloudify.relationships.connected_to
+
+  aria.relationships.instance_connected_to_floating_ip:
+    derived_from: cloudify.relationships.connected_to
+
+  aria.relationships.instance_connected_to_keypair:
+    derived_from: cloudify.aws.relationships.instance_connected_to_keypair

@@ -1,0 +1,51 @@
+node_types:
+
+  application.nodes.MongoDatabase:
+    derived_from: cloudify.nodes.DBMS
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/mongo/install-mongo.sh
+        start: scripts/mongo/start-mongo.sh
+        stop: scripts/mongo/stop-mongo.sh
+
+  application.nodes.NodeJSServer:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/nodejs/install-nodejs.sh
+
+  application.nodes.ApplicationModule:
+    derived_from: cloudify.nodes.ApplicationModule
+    properties:
+      application_url:
+        description: >
+          URL to an archive containing the application source.
+          The archive must contain one top level directory.
+        default: https://github.com/paypal/rest-api-sample-app-nodejs/archive/master.tar.gz
+      startup_script:
+        description: >
+          This script will be used to start the nodejs application.
+          The path is relative to the top level single directory inside
+          the archive
+        type: string
+        default: app.js
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create: scripts/application/configure-application.sh
+        configure: scripts/application/install-application.sh
+        start: scripts/application/start-application.sh
+        stop: scripts/application/stop-application.sh
+
+relationships:
+
+  app_connected_to_mongo:
+    derived_from: cloudify.relationships.connected_to
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        postconfigure: scripts/mongo/set-mongo-url.sh
+
+  app_contained_in_nodejs:
+    derived_from: cloudify.relationships.contained_in
+    target_interfaces:
+      cloudify.interfaces.relationship_lifecycle:
+        preconfigure: scripts/nodejs/set-nodejs-root.sh
