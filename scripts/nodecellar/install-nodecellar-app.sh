@@ -80,6 +80,7 @@ ARCHIVE_NAME=${AFTER_SLASH%%\?*}
 # Directory that will contain:
 #  - Application source
 ################################
+
 APPLICATION_ROOT_PATH=${TEMP_DIR}/$(ctx execution-id)/application
 APPLICATION_SOURCE_PATH=${APPLICATION_ROOT_PATH}/application-source
 mkdir -p ${APPLICATION_ROOT_PATH}

@@ -35,10 +35,10 @@ or
 
 Lets run the `install` workflow:
 
-`aria execute -w install --task-retries 100 --task-retry-interval 10 --task-thread-pool-size 20`
+`aria execute -w install --task-retries 10 --task-retry-interval 10 --task-thread-pool-size 20`
 
 ### Step 3: Uninstall
 
 To uninstall the application we run the `uninstall` workflow:
 
-`aria execute -w uninstall --task-retries 100 --task-retry-interval 10 --task-thread-pool-size 20`
+`aria execute -w uninstall --task-retries 10 --task-retry-interval 10 --task-thread-pool-size 20`

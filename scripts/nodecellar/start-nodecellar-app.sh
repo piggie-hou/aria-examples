@@ -63,15 +63,15 @@ export MONGO_HOST=$(ctx instance runtime_properties mongo_ip_address)
 export MONGO_PORT=$(ctx instance runtime_properties mongo_port)
 
 ctx logger info "MongoDB is located at ${MONGO_HOST}:${MONGO_PORT}"
-ctx logger info "Starting application"
+ctx logger info "Starting Nodecellar"
 
 ctx logger info "${COMMAND}"
 nohup ${COMMAND} > /dev/null 2>&1 &
 PID=$!
 
-wait_for_server 3000 'Application'
+wait_for_server 3000 'Nodecellar'
 
-# this runtime porperty is used by the stop-application.sh script.
+# this runtime porperty is used by the stop-nodecellar-app.sh script.
 ctx instance runtime_properties pid ${PID}
 
-ctx logger info "Successfully started Application (${PID})"
+ctx logger info "Successfully started Nodecellar (${PID})"

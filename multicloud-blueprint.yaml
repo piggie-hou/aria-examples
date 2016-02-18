@@ -208,6 +208,7 @@ node_templates:
         subnet:
           ip_version: 4
           cidr: 10.67.79.0/24
+          dns_nameservers: [8.8.4.4, 8.8.8.8]
       aws_properties:
         aws_config: { get_property: [ provider_configuration, aws_config ] }
     relationships:
@@ -253,7 +254,7 @@ node_templates:
       openstack_properties:
         openstack_config: { get_property: [ provider_configuration, openstack_config] }
         security_group:
-          description: Security group for Mongod Host
+          description: Security group for NodeJS Host
         rules:
           - port: 22
             remote_ip_prefix: 0.0.0.0/0
