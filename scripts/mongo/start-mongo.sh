@@ -62,7 +62,7 @@ ctx logger info "${COMMAND}"
 nohup ${COMMAND} > /dev/null 2>&1 &
 PID=$!
 
-wait_for_server 28017 'MongoDB'
+wait_for_server 27017 'MongoDB'
 
 # this runtime porperty is used by the stop-mongo script.
 ctx instance runtime_properties pid ${PID}

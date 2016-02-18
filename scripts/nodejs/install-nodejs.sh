@@ -61,7 +61,8 @@ cd ${TEMP_DIR}
 download http://nodejs.org/dist/v0.10.26/${NODEJS_TARBALL_NAME} ${NODEJS_TARBALL_NAME}
 untar ${NODEJS_TARBALL_NAME} ${NODEJS_BINARIES_PATH}
 
-# this runtime property is used by the start-application.sh
+# this runtime property is used by the start-nodecellar-app.sh
 ctx instance runtime_properties nodejs_binaries_path ${NODEJS_BINARIES_PATH}
 
-ctx logger info "Successfully installed NodeJS"
+ctx logger info "Sucessfully installed NodeJS"
+

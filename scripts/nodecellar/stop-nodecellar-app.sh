@@ -6,4 +6,4 @@ PID=$(ctx instance runtime_properties pid)
 
 kill -9 ${PID}
 
-ctx logger info "Successfully stopped the application (${PID})"
+ctx logger info "Sucessfully stopped Nodecellar (${PID})"

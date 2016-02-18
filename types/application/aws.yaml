@@ -71,7 +71,7 @@ node_types:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
             script_path: 
-              default: scripts/application/configure-application.sh
+              default: scripts/nodecellar/configure-nodecellar-app.sh
             fabric_env:
               default:
                 host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
@@ -81,7 +81,7 @@ node_types:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
             script_path: 
-              default: scripts/application/install-application.sh
+              default: scripts/nodecellar/install-nodecellar-app.sh
             fabric_env:
               default:
                 host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
@@ -91,7 +91,7 @@ node_types:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
             script_path: 
-              default: scripts/application/start-application.sh
+              default: scripts/nodecellar/start-nodecellar-app.sh
             fabric_env:
               default:
                 host_string: { get_attribute: [ nodejs_host, public_ip_address ] }
@@ -101,7 +101,7 @@ node_types:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
             script_path: 
-              default: scripts/application/stop-application.sh
+              default: scripts/nodecellar/stop-nodecellar-app.sh
             fabric_env:
               default:
                 host_string: { get_attribute: [ nodejs_host, public_ip_address ] }

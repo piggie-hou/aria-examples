@@ -31,10 +31,10 @@ node_types:
         default: app.js
     interfaces:
       cloudify.interfaces.lifecycle:
-        create: scripts/application/configure-application.sh
-        configure: scripts/application/install-application.sh
-        start: scripts/application/start-application.sh
-        stop: scripts/application/stop-application.sh
+        create: scripts/nodecellar/configure-nodecellar-app.sh
+        configure: scripts/nodecellar/install-nodecellar-app.sh
+        start: scripts/nodecellar/start-nodecellar-app.sh
+        stop: scripts/nodecellar/stop-nodecellar-app.sh
 
 relationships:
 
