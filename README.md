@@ -3,15 +3,18 @@
 This repository contains a TOSCA blueprint for installing the [Paypal Pizza Store](https://github.com/paypal/rest-api-sample-app-nodejs/) example application.
 
 The contents of this repository:
- - A Vagrantfile for booting a vagrant box for testing.
- - The Aria Blueprint that you will execute
- - The supporting scripts.
+
+- A Vagrantfile for booting a vagrant box for testing.
+- The Aria Blueprint that you will execute
+- The supporting scripts.
 
 This example blueprint creates:
 
-- A Mongo Database
-- A NodeJS Server
-- A Javascript Application
+- Bind9 DNS server application
+- NodeJS application that contains:
+    - A Mongo Database
+    - A NodeJS Server
+    - A Javascript Application
 
 ## How to Execute this Blueprint
 
@@ -27,9 +30,9 @@ This example blueprint creates:
 
 `aria init -p local-blueprint.yaml`
 
-or
+### Step 1 Alternative: Initialize
 
-`aria init -p multicloud-blueprint.yaml -i inputs/multicloud.yaml`
+`aria init -b multicloud-app -p multicloud-blueprint.yaml -i inputs/multicloud.yaml --install-plugins`
 
 ### Step 2: Install
 
