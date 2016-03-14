@@ -1,0 +1,263 @@
+node_types:
+
+###################################################################################################
+# Ellis deployment
+###################################################################################################
+
+  application.nodes.clearwater.Ellis:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/ellis.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ ellis_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+            public_ip:
+              default:  { get_attribute: [ ellis_vm_ip, floating_ip_address ] }
+
+###################################################################################################
+# Bono deployment
+###################################################################################################
+
+  application.nodes.clearwater.Bono:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/bono.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ bono_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+            public_ip:
+              default:  { get_attribute: [ bono_vm_ip, floating_ip_address ] }
+
+###################################################################################################
+# Sprout deployment
+###################################################################################################
+
+  application.nodes.clearwater.Sprout:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/sprout.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ sprout_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Homer deployment
+###################################################################################################
+
+  application.nodes.clearwater.Homer:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/homer.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ homer_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Homestead deployment
+###################################################################################################
+
+  application.nodes.clearwater.Homestead:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/homestead.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ homestead_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Ralf deployment
+###################################################################################################
+
+  application.nodes.clearwater.Ralf:
+    derived_from: cloudify.nodes.ApplicationServer
+    interfaces:
+      cloudify.interfaces.lifecycle:
+        create:
+          implementation: fabric.fabric_plugin.tasks.run_script
+          inputs:
+            script_path:
+              default: scripts/clearwater/ralf.sh
+            fabric_env:
+              default:
+                host_string: { get_attribute: [ ralf_vm_ip, floating_ip_address ] }
+                user: { get_input: agent_user }
+                key_filename: { get_input: local_path }
+            dns_ip:
+              default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Clearwater nodes nameserver configuration relationship
+###################################################################################################
+
+relationships:
+
+###################################################################################################
+# Ellis
+###################################################################################################
+
+  ellis_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ ellis_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Bono
+###################################################################################################
+
+  bono_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ bono_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Sprout
+###################################################################################################
+
+  sprout_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ sprout_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Homer
+###################################################################################################
+
+  homer_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ homer_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Homestead
+###################################################################################################
+
+  homestead_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ homestead_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }
+
+###################################################################################################
+# Ralf
+###################################################################################################
+
+  ralf_client_uses_dns_server:
+     derived_from: cloudify.relationships.connected_to
+     source_interfaces:
+        cloudify.interfaces.relationship_lifecycle:
+           preconfigure:
+            implementation: fabric.fabric_plugin.tasks.run_script
+            inputs:
+              script_path:
+                default: scripts/bind9/client_nameserver_configuration.sh
+              fabric_env:
+                default:
+                  host_string: { get_attribute: [ ralf_vm_ip, floating_ip_address ] }
+                  user: { get_input: agent_user }
+                  key_filename: { get_input: local_path }
+              dns_ip:
+                default: { get_attribute: [ bind9_host, ip ] }

@@ -1,0 +1,47 @@
+####################################################
+# OpenStack
+####################################################
+
+keystone_username: ''
+keystone_password: ''
+region: ''
+keystone_tenant_name: ''
+keystone_url: ''
+nova_url: ''
+neutron_url: ''
+openstack_image_id: ''
+openstack_flavor_id: ''
+network_name: 'clearwater-network'
+subnet_name: 'clearwater-subnet'
+router_name: 'clearwater-router'
+external_network_name: 'external'
+
+####################################################
+# AWS
+####################################################
+
+aws_access_key_id: ''
+aws_secret_access_key: ''
+ec2_region_name: ''
+aws_image_id: ''
+aws_instance_type: ''
+
+####################################################
+# SSH CLIENT CONFIGURATION
+####################################################
+
+agent_user: 'ubuntu'
+keypair_name: 'clearwater_ssh_key'
+local_path: '/tmp/clearwater.key'
+
+###################################################################################################
+# Clearwater inputs
+###################################################################################################
+
+dns_app_port_name: 'dns_app_port'
+bono_app_port_name: 'bono_app_port'
+ellis_app_port_name: 'ellis_app_port'
+sprout_app_port_name: 'sprout_app_port'
+homer_app_port_name: 'homer_app_port'
+homestead_app_port_name: 'homestead_app_port'
+ralf_app_port_name: 'ralf_app_port'
