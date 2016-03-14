@@ -1,27 +1,10 @@
-#!/bin/bash
-
-set -e
-
-####################################################################################################################
-
+#!/usr/bin/env bash
+ctx logger info "starting DNS..."
 # Install BIND.
-
-echo -e "127.0.0.1 bind9-host" | sudo tee -a /etc/hosts
-
 sudo apt-get update
-
-export DEBIAN_FRONTEND=noninteractive
-
-sudo apt-get install bind9 bind9utils bind9-doc --yes
-
-####################################################################################################################
-
+sudo DEBIAN_FRONTEND=noninteractive apt-get install bind9 --yes
 # Update BIND configuration with the specified zone and key.
-
-touch /tmp/named.conf.local
-
-cat >> /tmp/named.conf.local << EOF
-
+sudo bash -c 'cat >> /etc/bind/named.conf.local << EOF
 key example.com. {
   algorithm "HMAC-MD5";
   secret "8r6SIIX/cWE6b0Pe8l2bnc/v5vYbMSYvj+jQPP4bWe+CXzOpojJGrXI7iiustDQdWtBHUpWxweiHDWvLIp6/zw==";
@@ -36,16 +19,11 @@ zone "example.com" IN {
   };
 };
 
-zone "openstacklocal" {type master; file "/etc/bind/openstack.local";};
+zone "openstacklocal" {type master; file "/etc/bind/openstacklocal.local";};
 
-EOF
+EOF'
 
-sudo mv /tmp/named.conf.local /etc/bind/named.conf.local
-
-####################################################################################################################
-
-touch /tmp/cloud.local
-cat > /tmp/openstack.local << EOF
+sudo bash -c 'cat > /etc/bind/openstacklocal.local << EOF
 ;
 ; BIND data file for local loopback interface
 ;
@@ -60,36 +38,19 @@ cat > /tmp/openstack.local << EOF
 @       IN      NS      openstacklocal.
 ;@      IN      A       127.0.0.1
 ;@      IN      AAAA    ::1
-EOF
+EOF'
 
-sudo mv /tmp/openstack.local /etc/bind/openstack.local
-
-####################################################################################################################
-echo -e "Create basic zone configuration."
+# zone configuration.
 ctx logger info "DNS IP address is ${dns_ip}"
-echo ${dns_ip} > /home/ubuntu/dnsfile
-
-####################################################################################################################
-
-touch /tmp/db.example.com
-cat > /tmp/db.example.com << EOF
-
+sudo echo ${dns_ip} > /home/ubuntu/dnsfile
+sudo bash -c 'cat > /var/lib/bind/db.example.com<< EOF                    
 ; example.com
 \$ORIGIN example.com.
 \$TTL 1h
 @ IN SOA ns admin\@example.com. ( $(date +%Y%m%d%H) 1d 2h 1w 30s )
 @ NS ns
-ns A $(hostname -I)
-EOF
-
-sudo mv /tmp/db.example.com /var/lib/bind/db.example.com
+ns A $(hostname -I) 
+EOF'
 sudo chown root:bind /var/lib/bind/db.example.com
-
-####################################################################################################################
-
-echo -e "Now that BIND configuration is correct, kick it to reload."
+# Now that BIND configuration is correct, kick it to reload.
 sudo service bind9 reload
-
-ping example.com -c 2 -i 4
-
-####################################################################################################################

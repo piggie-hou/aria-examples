@@ -1,0 +1,1068 @@
+tosca_definitions_version: cloudify_dsl_1_2
+
+imports:
+  - http://www.getcloudify.org/spec/cloudify/3.3/types.yaml
+  - http://www.getcloudify.org/spec/fabric-plugin/1.3/plugin.yaml
+  - http://www.getcloudify.org/spec/aws-plugin/1.3/plugin.yaml
+  - http://www.getcloudify.org/spec/openstack-plugin/1.3/plugin.yaml
+  - types/multicloud/openstack.yaml
+#  - types/multicloud/aws.yaml
+  - types/application/bind9.yaml
+  - types/application/clearwater.yaml
+
+inputs:
+
+###################################################################################################
+# OpenStack inputs
+###################################################################################################
+
+  keystone_username:
+    type: string
+
+  keystone_password:
+    type: string
+
+  region:
+    type: string
+
+  keystone_tenant_name:
+    type: string
+
+  keystone_url:
+    type: string
+
+  region:
+    type: string
+
+  nova_url:
+    type: string
+
+  neutron_url:
+    type: string
+
+  openstack_image_id:
+    type: string
+
+  openstack_flavor_id:
+    type: string
+
+  network_name:
+    type: string
+
+  subnet_name:
+    type: string
+
+  router_name:
+    type: string
+
+  external_network_name:
+    type: string
+
+###################################################################################################
+# AWS inputs
+###################################################################################################
+
+  aws_access_key_id:
+    type: string
+
+  aws_secret_access_key:
+    type: string
+
+  ec2_region_name:
+    type: string
+
+  aws_image_id:
+    type: string
+
+  aws_instance_type:
+    type: string
+
+###################################################################################################
+# SSH inputs
+###################################################################################################
+
+  agent_user:
+    type: string
+
+  keypair_name:
+    type: string
+
+  local_path:
+    type: string
+
+###################################################################################################
+# Clearwater inputs
+###################################################################################################
+
+  dns_app_port_name:
+    type: string
+
+  bono_app_port_name:
+    type: string
+
+  ellis_app_port_name:
+    type: string
+
+  sprout_app_port_name:
+    type: string
+
+  homer_app_port_name:
+    type: string
+
+  homestead_app_port_name:
+    type: string
+
+  ralf_app_port_name:
+    type: string
+
+###################################################################################################
+# Clearwater app node definitions
+###################################################################################################
+
+node_templates:
+
+###################################################################################################
+# Generic deployment configuration
+# Includes:
+#  - provider configuration (creds)
+#  - networking:
+#    - app net
+#    - external net
+#    - router
+#  - SSH keypair
+###################################################################################################
+
+
+  provider_configuration:
+    type: provider_configuration
+    properties:
+      openstack_config:
+        username: { get_input: keystone_username }
+        password: { get_input: keystone_password }
+        tenant_name: { get_input: keystone_tenant_name }
+        auth_url: { get_input: keystone_url }
+        region: { get_input: region }
+        nova_url: { get_input: nova_url }
+        neutron_url: { get_input: neutron_url }
+      aws_config:
+        aws_access_key_id: { get_input: aws_access_key_id }
+        aws_secret_access_key: { get_input: aws_secret_access_key }
+        ec2_region_name: { get_input: ec2_region_name }
+
+  keypair:
+    type: aria.multicloud.keypair
+    properties:
+      resource_id: { get_input: keypair_name }
+      private_key_path: { get_input: local_path }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config ] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  application_network:
+    type: aria.multicloud.network
+    properties:
+      resource_id: { get_input: network_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  external_network:
+    type: aria.multicloud.network
+    properties:
+      use_external_resource: true
+      resource_id: { get_input: external_network_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  application_subnet:
+    type: aria.multicloud.subnet
+    properties:
+      resource_id: { get_input: subnet_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        subnet:
+          ip_version: 4
+          cidr: 10.67.79.0/24
+          dns_nameservers: [8.8.4.4, 8.8.8.8]
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - target: application_network
+        type: cloudify.relationships.contained_in
+      - target: router
+        type: aria.relationships.subnet_connected_to_router
+
+  router:
+    type: aria.multicloud.router
+    properties:
+      resource_id: { get_input: router_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - target: external_network
+        type: cloudify.relationships.connected_to
+
+
+###################################################################################################
+# BIND9 server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  dns_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  dns_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: dns_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: dns_app_security_groups
+
+  dns_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for BIND9
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for BIND9
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+  bind9_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: bind9_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: dns_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: dns_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: dns_app_security_groups
+
+###################################################################################################
+# BONO server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  bono_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  bono_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: bono_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: bono_app_security_groups
+
+  bono_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for Bono
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+  bono_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: bono_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: bono_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: bono_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: bono_app_security_groups
+
+
+###################################################################################################
+# ELLIS server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  ellis_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  ellis_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: ellis_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: ellis_app_security_groups
+
+  ellis_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for Ellis
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+
+  ellis_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: ellis_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: ellis_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: ellis_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: ellis_app_security_groups
+
+###################################################################################################
+# Sprout server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  sprout_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  sprout_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: sprout_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: sprout_app_security_groups
+
+  sprout_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for Sprout
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+  sprout_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: sprout_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: sprout_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: sprout_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: sprout_app_security_groups
+
+###################################################################################################
+# Homer server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  homer_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  homer_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: homer_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: homer_app_security_groups
+
+  homer_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for homer
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+
+  homer_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: homer_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: homer_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: homer_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: homer_app_security_groups
+
+###################################################################################################
+# Homestead server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  homestead_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  homestead_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: homestead_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: homestead_app_security_groups
+
+  homestead_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for homestead
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+  homestead_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: homestead_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: homestead_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: homestead_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: homestead_app_security_groups
+
+###################################################################################################
+# Ralf server provisioning
+# Includes:
+#  - floating IP
+#  - app port
+#  - security group with rules
+#  - VM
+###################################################################################################
+
+  ralf_vm_ip:
+    type: aria.multicloud.ip_address
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        floatingip:
+          floating_network_name: { get_input: external_network_name }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+
+  ralf_app_port:
+    type: aria.multicloud.port
+    properties:
+      resource_id: { get_input: ralf_app_port_name }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: application_network
+      - type: cloudify.relationships.depends_on
+        target: application_subnet
+      - type: aria.relationships.port_connected_to_security_group
+        target: bono_app_security_groups
+
+  ralf_app_security_groups:
+    type: aria.multicloud.security_group
+    properties:
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        security_group:
+          description: Security group for ralf
+        rules:
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - direction: ingress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+          - direction: egress
+            port_range_min: 1
+            port_range_max: 65535
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        description: Security group for Bono
+        rules:
+          - ip_protocol: tcp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+          - ip_protocol: udp
+            from_port: 1
+            to_port: 65535
+            cidr_ip: 0.0.0.0/0
+
+
+  ralf_host:
+    type: aria.multicloud.Compute
+    properties:
+      resource_id: ralf_host
+      install_agent: false
+      cloudify_agent:
+        user: { get_input: agent_user }
+        key: { get_property: [ keypair, private_key_path ] }
+      openstack_properties:
+        openstack_config: { get_property: [ provider_configuration, openstack_config] }
+        server:
+          image: { get_input: openstack_image_id }
+          flavor: { get_input: openstack_flavor_id }
+        management_network_name: { get_property: [application_network, resource_id] }
+      aws_properties:
+        aws_config: { get_property: [ provider_configuration, aws_config ] }
+        image_id: { get_input: aws_image_id }
+        instance_type: { get_input: aws_instance_type }
+    relationships:
+      - type: aria.relationships.instance_connected_to_keypair
+        target: keypair
+      - type: aria.relationships.instance_connected_to_floating_ip
+        target: ralf_vm_ip
+      - type: aria.relationships.instance_connected_to_port
+        target: ralf_app_port
+      - type: aria.relationships.instance_connected_to_security_group
+        target: ralf_app_security_groups
+
+###################################################################################################
+# BIND9 deployment
+###################################################################################################
+
+  bind9:
+    type: application.nodes.Bind9
+    relationships:
+      - type: cloudify.relationships.contained_in
+        target: bind9_host
+
+###################################################################################################
+# Ellis deployment
+###################################################################################################
+
+  ellis:
+    type: application.nodes.clearwater.Ellis
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: ellis_host
+
+###################################################################################################
+# Bono deployment
+###################################################################################################
+
+  bono:
+    type: application.nodes.clearwater.Bono
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: bono_host
+
+###################################################################################################
+# Sprout deployment
+###################################################################################################
+
+  sprout:
+    type: application.nodes.clearwater.Sprout
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: sprout_host
+
+###################################################################################################
+# Homer deployment
+###################################################################################################
+
+  homer:
+    type: application.nodes.clearwater.Homer
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: homer_host
+
+###################################################################################################
+# Homestead deployment
+###################################################################################################
+
+  homestead:
+    type: application.nodes.clearwater.Homestead
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: homestead_host
+
+###################################################################################################
+# Ralf deployment
+###################################################################################################
+
+  ralf:
+    type: application.nodes.clearwater.Ralf
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: bind9
+      - type: cloudify.relationships.contained_in
+        target: ralf_host
+
+###################################################################################################
+# DNS nameserver configuration
+###################################################################################################
+
+  dns_nameserver_config:
+    type: application.nodes.dns_nameserver_configuration
+    relationships:
+      - type: cloudify.relationships.depends_on
+        target: ralf
+      - type: cloudify.relationships.depends_on
+        target: homestead
+      - type: cloudify.relationships.depends_on
+        target: homer
+      - type: cloudify.relationships.depends_on
+        target: sprout
+      - type: cloudify.relationships.depends_on
+        target: bono
+      - type: cloudify.relationships.depends_on
+        target: ellis
+      - type: ralf_client_uses_dns_server
+        target: ralf_host
+      - type: homestead_client_uses_dns_server
+        target: homestead_host
+      - type: homer_client_uses_dns_server
+        target: homer_host
+      - type: sprout_client_uses_dns_server
+        target: sprout_host
+      - type: bono_client_uses_dns_server
+        target: bono_host
+      - type: ellis_client_uses_dns_server
+        target: ellis_host
+
+
+###################################################################################################
+# Outputs
+###################################################################################################
+
+outputs:
+  endpoint:
+    description: Ellis UI address
+    value:
+      dns_ip: { get_attribute: [ ellis_vm_ip, floating_ip_address ] }
+      dns_port: 8888

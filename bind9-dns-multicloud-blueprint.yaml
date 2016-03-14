@@ -132,7 +132,7 @@ node_templates:
       aws_properties:
         aws_config: { get_property: [ provider_configuration, aws_config ] }
 
-  dns_app_ip:
+  dns_vm_ip:
     type: aria.multicloud.ip_address
     properties:
       openstack_properties:
@@ -198,8 +198,13 @@ node_templates:
         rules:
           - port: 22
             remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
           - port: 53
             remote_ip_prefix: 0.0.0.0/0
+            protocol: tcp
+          - port: 53
+            remote_ip_prefix: 0.0.0.0/0
+            protocol: udp
       aws_properties:
         aws_config: { get_property: [ provider_configuration, aws_config ] }
         description: Security group for Mongod Host
@@ -212,7 +217,10 @@ node_templates:
             from_port: 53
             to_port: 53
             cidr_ip: 0.0.0.0/0
-
+          - ip_protocol: udp
+            from_port: 53
+            to_port: 53
+            cidr_ip: 0.0.0.0/0
 
   bind9_host:
     type: aria.multicloud.Compute
@@ -236,7 +244,7 @@ node_templates:
       - type: aria.relationships.instance_connected_to_keypair
         target: keypair
       - type: aria.relationships.instance_connected_to_floating_ip
-        target: dns_app_ip
+        target: dns_vm_ip
       - type: aria.relationships.instance_connected_to_port
         target: dns_app_port
       - type: aria.relationships.instance_connected_to_security_group
@@ -253,5 +261,5 @@ outputs:
   endpoint:
     description: Bind9 DNS server IP/Port
     value:
-      dns_ip: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+      dns_ip: { get_attribute: [ dns_vm_ip, floating_ip_address ] }
       dns_port: 53

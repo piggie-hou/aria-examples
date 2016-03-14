@@ -11,11 +11,11 @@ node_types:
               default: scripts/bind9/install.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+                host_string: { get_attribute: [ dns_vm_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_input: local_path }
             dns_ip:
-              default: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+              default: { get_attribute: [ bind9_host, ip ] }
         start:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
@@ -23,11 +23,11 @@ node_types:
               default: scripts/bind9/start.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+                host_string: { get_attribute: [ dns_vm_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_input: local_path }
             dns_ip:
-              default: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+              default: { get_attribute: [ bind9_host, ip ] }
         stop:
           implementation: fabric.fabric_plugin.tasks.run_script
           inputs:
@@ -35,8 +35,11 @@ node_types:
               default: scripts/bind9/stop.sh
             fabric_env:
               default:
-                host_string: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+                host_string: { get_attribute: [ dns_vm_ip, floating_ip_address ] }
                 user: { get_input: agent_user }
                 key_filename: { get_input: local_path }
             dns_ip:
-              default: { get_attribute: [ dns_app_ip, floating_ip_address ] }
+              default: { get_attribute: [ bind9_host, ip ] }
+
+  application.nodes.dns_nameserver_configuration:
+    derived_from: cloudify.nodes.Root
