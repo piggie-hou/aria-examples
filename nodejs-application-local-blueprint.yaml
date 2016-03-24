@@ -15,7 +15,7 @@ inputs:
     default: localhost
 
   mongo_key_filename:
-    default: localhost
+    default: ~/.ssh/id_rsa
 
   mongo_agent_user:
     default: travis
