@@ -12,10 +12,10 @@ inputs:
 ###############################
 
   mongodb_host:
-    default: 10.23.11.228
+    default: localhost
 
   mongo_key_filename:
-    default: ~/.ssh/id_rsa
+    default: localhost
 
   mongo_agent_user:
     default: ubuntu
