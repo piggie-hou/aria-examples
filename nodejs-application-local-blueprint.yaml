@@ -12,26 +12,26 @@ inputs:
 ###############################
 
   mongodb_host:
-    default: 10.23.11.228
+    default: localhost
 
   mongo_key_filename:
     default: ~/.ssh/id_rsa
 
   mongo_agent_user:
-    default: ubuntu
+    default: travis
 
 ###############################
 # NodeJS groups
 ###############################
 
   nodejs_host:
-    default: 10.23.11.228
+    default: localhost
 
   nodejs_key_filename:
     default: ~/.ssh/id_rsa
 
   nodejs_agent_user:
-    default: ubuntu
+    default: travis
 
 
 node_templates:
