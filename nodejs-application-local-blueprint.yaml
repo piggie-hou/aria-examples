@@ -5,6 +5,35 @@ imports:
   - http://www.getcloudify.org/spec/fabric-plugin/1.3/plugin.yaml
   - types/application/local.yaml
 
+inputs:
+
+###############################
+# MongoDB groups
+###############################
+
+  mongodb_host:
+    default: 10.23.11.228
+
+  mongo_key_filename:
+    default: ~/.ssh/id_rsa
+
+  mongo_agent_user:
+    default: ubuntu
+
+###############################
+# NodeJS groups
+###############################
+
+  nodejs_host:
+    default: 10.23.11.228
+
+  nodejs_key_filename:
+    default: ~/.ssh/id_rsa
+
+  nodejs_agent_user:
+    default: ubuntu
+
+
 node_templates:
 
   application:
@@ -19,15 +48,21 @@ node_templates:
     type: application.nodes.NodeJSServer
     relationships:
       - type: cloudify.relationships.contained_in
-        target: host
+        target: app_host
 
   mongod:
     type: application.nodes.MongoDatabase
     relationships:
       - type: cloudify.relationships.contained_in
-        target: host
+        target: mongod_host
 
-  host:
+  mongod_host:
+    type: cloudify.nodes.Compute
+    properties:
+      ip: localhost
+      install_agent: false
+
+  app_host:
     type: cloudify.nodes.Compute
     properties:
       ip: localhost

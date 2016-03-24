@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -x
 
 function get_response_code() {
 

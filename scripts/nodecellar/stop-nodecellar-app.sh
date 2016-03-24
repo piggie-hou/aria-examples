@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -x
 
 PID=$(ctx instance runtime_properties pid)
 

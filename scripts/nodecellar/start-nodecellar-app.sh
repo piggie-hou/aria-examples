@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -x
 
 function get_response_code() {
 
@@ -71,7 +71,7 @@ PID=$!
 
 wait_for_server 3000 'Nodecellar'
 
-# this runtime porperty is used by the stop-nodecellar-app.sh script.
+# this runtime property is used by the stop-nodecellar-app.sh script.
 ctx instance runtime_properties pid ${PID}
 
 ctx logger info "Successfully started Nodecellar (${PID})"
