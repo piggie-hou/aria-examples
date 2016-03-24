@@ -32,16 +32,16 @@ This example blueprint creates:
 
 ### Step 1 Alternative: Initialize
 
-`aria init -b multicloud-app -p multicloud-blueprint.yaml -i inputs/multicloud.yaml --install-plugins`
+`aria init -b clearwater-5.1-multicloud-blueprint -p clearwater-5.1-multicloud-blueprint.yaml -i clearwater-5.1-multicloud-inputs.yaml.template --install-plugins`
 
 ### Step 2: Install
 
 Lets run the `install` workflow:
 
-`aria execute -w install --task-retries 10 --task-retry-interval 10 --task-thread-pool-size 20`
+`aria execute -w install --task-retries 10 --task-retry-interval 10`
 
 ### Step 3: Uninstall
 
 To uninstall the application we run the `uninstall` workflow:
 
-`aria execute -w uninstall --task-retries 10 --task-retry-interval 10 --task-thread-pool-size 20`
+`aria execute -w uninstall --task-retries 10 --task-retry-interval 10`
