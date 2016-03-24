@@ -18,7 +18,7 @@ inputs:
     default: localhost
 
   mongo_agent_user:
-    default: ubuntu
+    default: travis
 
 ###############################
 # NodeJS groups
@@ -31,7 +31,7 @@ inputs:
     default: ~/.ssh/id_rsa
 
   nodejs_agent_user:
-    default: ubuntu
+    default: travis
 
 
 node_templates:
