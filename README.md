@@ -20,17 +20,13 @@ This example blueprint creates:
 
 ### Step 1: Initialize
 
-`aria init -p nodejs-application-local-blueprint.yaml`
-
-### Step 1 Alternative: Initialize
-
-`aria init -b clearwater-5.1-multicloud-blueprint -p clearwater-5.1-multicloud-blueprint.yaml -i clearwater-5.1-multicloud-inputs.yaml.template --install-plugins`
+`aria init -b clearwater-5.1-multicloud-blueprint -p clearwater-5.1-multicloud-blueprint.yaml -i inputs/clearwater-5.1-multicloud-inputs.yaml.template --install-plugins`
 
 ### Step 2: Install
 
 Lets run the `install` workflow:
 
-`aria execute -w install --task-retries 10 --task-retry-interval 10`
+`aria execute -w install -b clearwater-5.1-multicloud-blueprint --task-retries 10 --task-retry-interval 10`
 
 ### Step 3: Uninstall
 
